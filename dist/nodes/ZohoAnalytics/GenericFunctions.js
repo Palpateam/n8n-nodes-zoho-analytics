@@ -13,7 +13,7 @@ async function zohoApiRequest(method, endpoint, qs = {}, body = {}, orgId, isFor
     const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const headers = {};
     if (orgId) {
-        headers['ZANALYTICS-ORGID'] = orgId;
+        headers['ZANALYTICS-ORGID'] = String(orgId).trim();
     }
     if (isFormData) {
         // Manually construct multipart/form-data body
@@ -81,11 +81,13 @@ async function getWorkspaces() {
 }
 async function getViews() {
     var _a;
-    const workspaceID = this.getNodeParameter('workspace', '');
+    const workspaceIDRaw = this.getNodeParameter('workspace', '') || '';
+    const workspaceID = String(workspaceIDRaw).trim();
     if (!workspaceID)
         return [];
-    const organisationID = this.getNodeParameter('organisation', '');
-    const response = await zohoApiRequest.call(this, 'GET', `/restapi/v2/workspaces/${workspaceID}/views`, {}, {}, organisationID);
+    const organisationIDRaw = this.getNodeParameter('organisation', '') || '';
+    const organisationID = String(organisationIDRaw).trim();
+    const response = await zohoApiRequest.call(this, 'GET', `/restapi/v2/workspaces/${encodeURIComponent(workspaceID)}/views`, {}, {}, organisationID);
     const views = ((_a = response === null || response === void 0 ? void 0 : response.data) === null || _a === void 0 ? void 0 : _a.views) || [];
     return views
         .filter((v) => v.viewType === 'Table')
@@ -93,12 +95,14 @@ async function getViews() {
 }
 async function getColumns() {
     var _a, _b;
-    const viewID = this.getNodeParameter('view', '');
+    const viewIDRaw = this.getNodeParameter('view', '') || '';
+    const viewID = String(viewIDRaw).trim();
     if (!viewID)
         return [];
-    const organisationID = this.getNodeParameter('organisation', '');
+    const organisationIDRaw = this.getNodeParameter('organisation', '') || '';
+    const organisationID = String(organisationIDRaw).trim();
     const qs = { CONFIG: JSON.stringify({ withInvolvedMetaInfo: true }) };
-    const response = await zohoApiRequest.call(this, 'GET', `/restapi/v2/views/${viewID}`, qs, {}, organisationID);
+    const response = await zohoApiRequest.call(this, 'GET', `/restapi/v2/views/${encodeURIComponent(viewID)}`, qs, {}, organisationID);
     const columns = ((_b = (_a = response === null || response === void 0 ? void 0 : response.data) === null || _a === void 0 ? void 0 : _a.views) === null || _b === void 0 ? void 0 : _b.columns) || [];
     return columns.map((col) => ({ name: col.columnName, value: col.columnName }));
 }

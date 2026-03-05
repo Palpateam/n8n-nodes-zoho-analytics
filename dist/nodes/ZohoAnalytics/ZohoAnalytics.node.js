@@ -326,11 +326,14 @@ class ZohoAnalytics {
         const operation = this.getNodeParameter('operation', 0);
         for (let i = 0; i < items.length; i++) {
             try {
-                const orgID = this.getNodeParameter('organisation', i);
-                const workspaceID = this.getNodeParameter('workspace', i);
+                const orgIDRaw = this.getNodeParameter('organisation', i) || '';
+                const workspaceIDRaw = this.getNodeParameter('workspace', i) || '';
+                const orgID = String(orgIDRaw).trim();
+                const workspaceID = String(workspaceIDRaw).trim();
                 if (resource === 'row') {
-                    const viewID = this.getNodeParameter('view', i);
-                    const endpoint = `/restapi/v2/workspaces/${workspaceID}/views/${viewID}/rows`;
+                    const viewIDRaw = this.getNodeParameter('view', i) || '';
+                    const viewID = String(viewIDRaw).trim();
+                    const endpoint = `/restapi/v2/workspaces/${encodeURIComponent(workspaceID)}/views/${encodeURIComponent(viewID)}/rows`;
                     if (operation === 'add') {
                         const columnData = this.getNodeParameter('data.columns', i, []);
                         const columns = {};
@@ -376,8 +379,9 @@ class ZohoAnalytics {
                     }
                 }
                 else if (resource === 'data') {
-                    const viewID = this.getNodeParameter('view', i);
-                    const endpoint = `/restapi/v2/workspaces/${workspaceID}/views/${viewID}/data`;
+                    const viewIDRaw = this.getNodeParameter('view', i) || '';
+                    const viewID = String(viewIDRaw).trim();
+                    const endpoint = `/restapi/v2/workspaces/${encodeURIComponent(workspaceID)}/views/${encodeURIComponent(viewID)}/data`;
                     if (operation === 'export') {
                         const criteria = this.getNodeParameter('criteria', i, '');
                         const config = { responseFormat: 'json' };
@@ -417,7 +421,7 @@ class ZohoAnalytics {
                     }
                 }
                 else if (resource === 'table') {
-                    const endpoint = `/restapi/v2/workspaces/${workspaceID}/data`;
+                    const endpoint = `/restapi/v2/workspaces/${encodeURIComponent(workspaceID)}/data`;
                     if (operation === 'importNew') {
                         const tableName = this.getNodeParameter('tableName', i);
                         let jsonData = this.getNodeParameter('jsonData', i, '');
