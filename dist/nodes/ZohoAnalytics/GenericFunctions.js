@@ -5,12 +5,30 @@ exports.getOrganisations = getOrganisations;
 exports.getWorkspaces = getWorkspaces;
 exports.getViews = getViews;
 exports.getColumns = getColumns;
+const VALID_ENVIRONMENTS = ['eu', 'com', 'com.au', 'com.cn', 'in', 'jp'];
 async function zohoApiRequest(method, endpoint, qs = {}, body = {}, orgId, isFormData = false) {
     const credentials = await this.getCredentials('zohoAnalyticsOAuth2Api');
-    // Construct API domain directly from environment to be more robust during automated runs
-    const environment = credentials.environment || 'eu';
+    // Sanitize environment: trim, lowercase, and validate against known values
+    let environment = (credentials.environment || '').trim().toLowerCase();
+    if (!environment || !VALID_ENVIRONMENTS.includes(environment)) {
+        console.warn(`[ZohoAnalytics] Invalid or missing environment value: "${credentials.environment}" — defaulting to "eu"`);
+        environment = 'eu';
+    }
     const apiDomain = `https://analyticsapi.zoho.${environment}`;
     const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const fullUrl = `${apiDomain}${path}`;
+    // Pre-validate the URL to catch malformed URLs early with a descriptive error
+    try {
+        new URL(fullUrl);
+    }
+    catch (urlError) {
+        console.error(`[ZohoAnalytics] URL validation failed. fullUrl="${fullUrl}", environment="${environment}", endpoint="${endpoint}"`);
+        throw new Error(`Zoho Analytics: Invalid URL constructed: "${fullUrl}". ` +
+            `Environment="${environment}", endpoint="${endpoint}". ` +
+            `This usually means a required parameter (workspace ID, view ID) is empty or invalid.`);
+    }
+    // Debug logging (temporary — helps diagnose scheduled execution issues)
+    console.log(`[ZohoAnalytics] ${method} ${fullUrl} | orgId=${orgId || '(none)'} | isFormData=${isFormData}`);
     const headers = {};
     if (orgId) {
         headers['ZANALYTICS-ORGID'] = String(orgId).trim();
@@ -31,7 +49,7 @@ async function zohoApiRequest(method, endpoint, qs = {}, body = {}, orgId, isFor
         const options = {
             method,
             qs,
-            url: `${apiDomain}${path}`,
+            url: fullUrl,
             body: Buffer.from(multipartBody),
             headers,
             encoding: null,
@@ -45,6 +63,7 @@ async function zohoApiRequest(method, endpoint, qs = {}, body = {}, orgId, isFor
             return response;
         }
         catch (error) {
+            console.error(`[ZohoAnalytics] Request FAILED: ${method} ${fullUrl}`, error);
             throw error;
         }
     }
@@ -52,7 +71,7 @@ async function zohoApiRequest(method, endpoint, qs = {}, body = {}, orgId, isFor
         const options = {
             method,
             qs,
-            url: `${apiDomain}${path}`,
+            url: fullUrl,
             body,
             headers,
             json: true,
@@ -61,6 +80,7 @@ async function zohoApiRequest(method, endpoint, qs = {}, body = {}, orgId, isFor
             return await this.helpers.httpRequestWithAuthentication.call(this, 'zohoAnalyticsOAuth2Api', options);
         }
         catch (error) {
+            console.error(`[ZohoAnalytics] Request FAILED: ${method} ${fullUrl}`, error);
             throw error;
         }
     }

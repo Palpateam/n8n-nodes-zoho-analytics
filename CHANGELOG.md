@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-03-06
+
+### Added
+
+- URL pre-validation with `new URL()` before every API call — invalid URLs now produce a descriptive error showing the exact URL and parameters.
+- Guard clauses that validate `workspaceID` and `viewID` are non-empty before constructing endpoints.
+- Environment value sanitization against known Zoho domains (`eu`, `com`, `com.au`, `com.cn`, `in`, `jp`).
+- Diagnostic `console.log` output of resolved parameter values and constructed URLs for debugging scheduled executions.
+
+### Fixed
+
+- Persistent `Invalid URL` (ERR_INVALID_URL) error during scheduled executions — now fails early with actionable error messages instead of a cryptic URL error.
+
 ## [1.1.0] - 2026-03-04
 
 ### Added
