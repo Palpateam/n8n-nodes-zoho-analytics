@@ -338,12 +338,41 @@ export class ZohoAnalytics implements INodeType {
 
 		for (let i = 0; i < items.length; i++) {
 			try {
-				const orgID = this.getNodeParameter('organisation', i) as string;
-				const workspaceID = this.getNodeParameter('workspace', i) as string;
+				const orgIDRaw = this.getNodeParameter('organisation', i) as string | number || '';
+				const workspaceIDRaw = this.getNodeParameter('workspace', i) as string | number || '';
+				const orgID = String(orgIDRaw).trim();
+				const workspaceID = String(workspaceIDRaw).trim();
+
+				// Guard: workspace ID is required for all operations
+				if (!workspaceID) {
+					throw new NodeOperationError(
+						this.getNode(),
+						`Workspace ID is empty or not resolved. Raw value: "${workspaceIDRaw}". ` +
+						`This typically happens when loadOptions fields are not properly cached during scheduled execution. ` +
+						`Try setting the workspace ID directly as a fixed value or expression instead of using the dropdown.`,
+						{ itemIndex: i },
+					);
+				}
+
+				// Debug logging for scheduled execution diagnosis
+				console.log(`[ZohoAnalytics] execute item=${i} | orgID="${orgID}" (raw: "${orgIDRaw}") | workspaceID="${workspaceID}" (raw: "${workspaceIDRaw}") | resource="${resource}" | operation="${operation}"`);
 
 				if (resource === 'row') {
-					const viewID = this.getNodeParameter('view', i) as string;
-					const endpoint = `/restapi/v2/workspaces/${workspaceID}/views/${viewID}/rows`;
+					const viewIDRaw = this.getNodeParameter('view', i) as string | number || '';
+					const viewID = String(viewIDRaw).trim();
+
+					// Guard: view ID is required for row operations
+					if (!viewID) {
+						throw new NodeOperationError(
+							this.getNode(),
+							`View ID is empty or not resolved. Raw value: "${viewIDRaw}". ` +
+							`Try setting the view ID directly as a fixed value or expression instead of using the dropdown.`,
+							{ itemIndex: i },
+						);
+					}
+
+					console.log(`[ZohoAnalytics] row operation | viewID="${viewID}" (raw: "${viewIDRaw}")`);
+					const endpoint = `/restapi/v2/workspaces/${encodeURIComponent(workspaceID)}/views/${encodeURIComponent(viewID)}/rows`;
 
 					if (operation === 'add') {
 						const columnData = this.getNodeParameter('data.columns', i, []) as Array<{ columnName: string; columnValue: string }>;
@@ -392,8 +421,21 @@ export class ZohoAnalytics implements INodeType {
 						returnData.push(...this.helpers.returnJsonArray(responseData.data));
 					}
 				} else if (resource === 'data') {
-					const viewID = this.getNodeParameter('view', i) as string;
-					const endpoint = `/restapi/v2/workspaces/${workspaceID}/views/${viewID}/data`;
+					const viewIDRaw = this.getNodeParameter('view', i) as string | number || '';
+					const viewID = String(viewIDRaw).trim();
+
+					// Guard: view ID is required for data operations
+					if (!viewID) {
+						throw new NodeOperationError(
+							this.getNode(),
+							`View ID is empty or not resolved. Raw value: "${viewIDRaw}". ` +
+							`Try setting the view ID directly as a fixed value or expression instead of using the dropdown.`,
+							{ itemIndex: i },
+						);
+					}
+
+					console.log(`[ZohoAnalytics] data operation | viewID="${viewID}" (raw: "${viewIDRaw}")`);
+					const endpoint = `/restapi/v2/workspaces/${encodeURIComponent(workspaceID)}/views/${encodeURIComponent(viewID)}/data`;
 
 					if (operation === 'export') {
 						const criteria = this.getNodeParameter('criteria', i, '') as string;
@@ -436,7 +478,7 @@ export class ZohoAnalytics implements INodeType {
 						returnData.push(...this.helpers.returnJsonArray(responseData.data));
 					}
 				} else if (resource === 'table') {
-					const endpoint = `/restapi/v2/workspaces/${workspaceID}/data`;
+					const endpoint = `/restapi/v2/workspaces/${encodeURIComponent(workspaceID)}/data`;
 
 					if (operation === 'importNew') {
 						const tableName = this.getNodeParameter('tableName', i) as string;

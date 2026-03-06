@@ -4,6 +4,8 @@ import {
 	IExecuteFunctions,
 } from 'n8n-workflow';
 
+const VALID_ENVIRONMENTS = ['eu', 'com', 'com.au', 'com.cn', 'in', 'jp'];
+
 export async function zohoApiRequest(
 	this: ILoadOptionsFunctions | IExecuteFunctions | any,
 	method: string,
@@ -15,15 +17,35 @@ export async function zohoApiRequest(
 ): Promise<any> {
 	const credentials = await this.getCredentials('zohoAnalyticsOAuth2Api');
 	
-	// Construct API domain directly from environment to be more robust during automated runs
-	const environment = credentials.environment as string || 'eu';
+	// Sanitize environment: trim, lowercase, and validate against known values
+	let environment = (credentials.environment as string || '').trim().toLowerCase();
+	if (!environment || !VALID_ENVIRONMENTS.includes(environment)) {
+		console.warn(`[ZohoAnalytics] Invalid or missing environment value: "${credentials.environment}" — defaulting to "eu"`);
+		environment = 'eu';
+	}
 	const apiDomain = `https://analyticsapi.zoho.${environment}`;
 
 	const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+	const fullUrl = `${apiDomain}${path}`;
+
+	// Pre-validate the URL to catch malformed URLs early with a descriptive error
+	try {
+		new URL(fullUrl);
+	} catch (urlError) {
+		console.error(`[ZohoAnalytics] URL validation failed. fullUrl="${fullUrl}", environment="${environment}", endpoint="${endpoint}"`);
+		throw new Error(
+			`Zoho Analytics: Invalid URL constructed: "${fullUrl}". ` +
+			`Environment="${environment}", endpoint="${endpoint}". ` +
+			`This usually means a required parameter (workspace ID, view ID) is empty or invalid.`
+		);
+	}
+
+	// Debug logging (temporary — helps diagnose scheduled execution issues)
+	console.log(`[ZohoAnalytics] ${method} ${fullUrl} | orgId=${orgId || '(none)'} | isFormData=${isFormData}`);
 
 	const headers: any = {};
 	if (orgId) {
-		headers['ZANALYTICS-ORGID'] = orgId;
+		headers['ZANALYTICS-ORGID'] = String(orgId).trim();
 	}
 
 	if (isFormData) {
@@ -45,7 +67,7 @@ export async function zohoApiRequest(
 		const options: any = {
 			method,
 			qs,
-			url: `${apiDomain}${path}`,
+			url: fullUrl,
 			body: Buffer.from(multipartBody),
 			headers,
 			encoding: null,
@@ -59,13 +81,14 @@ export async function zohoApiRequest(
 			}
 			return response;
 		} catch (error) {
+			console.error(`[ZohoAnalytics] Request FAILED: ${method} ${fullUrl}`, error);
 			throw error;
 		}
 	} else {
 		const options: any = {
 			method,
 			qs,
-			url: `${apiDomain}${path}`,
+			url: fullUrl,
 			body,
 			headers,
 			json: true,
@@ -74,6 +97,7 @@ export async function zohoApiRequest(
 		try {
 			return await this.helpers.httpRequestWithAuthentication.call(this, 'zohoAnalyticsOAuth2Api', options);
 		} catch (error) {
+			console.error(`[ZohoAnalytics] Request FAILED: ${method} ${fullUrl}`, error);
 			throw error;
 		}
 	}
@@ -94,11 +118,13 @@ export async function getWorkspaces(this: ILoadOptionsFunctions): Promise<INodeP
 }
 
 export async function getViews(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-	const workspaceID = this.getNodeParameter('workspace', '') as string;
+	const workspaceIDRaw = this.getNodeParameter('workspace', '') as string | number || '';
+	const workspaceID = String(workspaceIDRaw).trim();
 	if (!workspaceID) return [];
 
-	const organisationID = this.getNodeParameter('organisation', '') as string;
-	const response = await zohoApiRequest.call(this, 'GET', `/restapi/v2/workspaces/${workspaceID}/views`, {}, {}, organisationID);
+	const organisationIDRaw = this.getNodeParameter('organisation', '') as string | number || '';
+	const organisationID = String(organisationIDRaw).trim();
+	const response = await zohoApiRequest.call(this, 'GET', `/restapi/v2/workspaces/${encodeURIComponent(workspaceID)}/views`, {}, {}, organisationID);
 	const views = response?.data?.views || [];
 
 	return views
@@ -107,12 +133,14 @@ export async function getViews(this: ILoadOptionsFunctions): Promise<INodeProper
 }
 
 export async function getColumns(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-	const viewID = this.getNodeParameter('view', '') as string;
+	const viewIDRaw = this.getNodeParameter('view', '') as string | number || '';
+	const viewID = String(viewIDRaw).trim();
 	if (!viewID) return [];
 
-	const organisationID = this.getNodeParameter('organisation', '') as string;
+	const organisationIDRaw = this.getNodeParameter('organisation', '') as string | number || '';
+	const organisationID = String(organisationIDRaw).trim();
 	const qs = { CONFIG: JSON.stringify({ withInvolvedMetaInfo: true }) };
-	const response = await zohoApiRequest.call(this, 'GET', `/restapi/v2/views/${viewID}`, qs, {}, organisationID);
+	const response = await zohoApiRequest.call(this, 'GET', `/restapi/v2/views/${encodeURIComponent(viewID)}`, qs, {}, organisationID);
 
 	const columns = response?.data?.views?.columns || [];
 	return columns.map((col: any) => ({ name: col.columnName, value: col.columnName }));
