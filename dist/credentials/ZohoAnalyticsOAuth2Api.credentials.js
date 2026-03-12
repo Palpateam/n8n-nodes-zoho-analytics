@@ -15,38 +15,6 @@ class ZohoAnalyticsOAuth2Api {
                 default: 'authorizationCode',
             },
             {
-                displayName: 'Authorization URL',
-                name: 'authUrl',
-                type: 'hidden',
-                default: '={{$self["url"]}}/oauth/v2/auth',
-                required: true,
-            },
-            {
-                displayName: 'Access Token URL',
-                name: 'accessTokenUrl',
-                type: 'hidden',
-                default: '={{$self["url"]}}/oauth/v2/token',
-                required: true,
-            },
-            {
-                displayName: 'Scope',
-                name: 'scope',
-                type: 'hidden',
-                default: 'ZohoAnalytics.fullaccess.all',
-            },
-            {
-                displayName: 'Auth URI Query Parameters',
-                name: 'authQueryParameters',
-                type: 'hidden',
-                default: 'access_type=offline&prompt=consent',
-            },
-            {
-                displayName: 'Authentication',
-                name: 'authentication',
-                type: 'hidden',
-                default: 'body',
-            },
-            {
                 displayName: 'Environment',
                 name: 'environment',
                 type: 'options',
@@ -79,10 +47,36 @@ class ZohoAnalyticsOAuth2Api {
                 default: 'eu',
             },
             {
-                displayName: 'URL',
-                name: 'url',
+                displayName: 'Authorization URL',
+                name: 'authUrl',
                 type: 'hidden',
-                default: '=https://accounts.zoho.{{$self["environment"]}}',
+                default: '=https://accounts.zoho.{{$self["environment"]}}/oauth/v2/auth',
+                required: true,
+            },
+            {
+                displayName: 'Access Token URL',
+                name: 'accessTokenUrl',
+                type: 'hidden',
+                default: '=https://accounts.zoho.{{$self["environment"]}}/oauth/v2/token',
+                required: true,
+            },
+            {
+                displayName: 'Scope',
+                name: 'scope',
+                type: 'hidden',
+                default: 'ZohoAnalytics.fullaccess.all',
+            },
+            {
+                displayName: 'Auth URI Query Parameters',
+                name: 'authQueryParameters',
+                type: 'hidden',
+                default: 'access_type=offline&prompt=consent',
+            },
+            {
+                displayName: 'Authentication',
+                name: 'authentication',
+                type: 'hidden',
+                default: 'body',
             },
         ];
     }

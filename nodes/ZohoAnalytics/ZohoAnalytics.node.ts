@@ -137,40 +137,36 @@ export class ZohoAnalytics implements INodeType {
 			//         Base Fields
 			// ----------------------------------
 			{
-				displayName: 'Organization Name or ID',
+				displayName: 'Organization ID',
 				name: 'organisation',
-				type: 'options',
-				typeOptions: {
-					loadOptionsMethod: 'getOrganisations',
-				},
+				type: 'string',
 				default: '',
-				description: 'Organization to perform actions on. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+				required: true,
+				placeholder: 'e.g. 123456789',
+				description: 'The numeric ID of your Zoho Analytics organization. Find it in Zoho Analytics under Setup > Organization.',
 			},
 			{
-				displayName: 'Workspace Name or ID',
+				displayName: 'Workspace ID',
 				name: 'workspace',
-				type: 'options',
-				typeOptions: {
-					loadOptionsMethod: 'getWorkspaces',
-				},
+				type: 'string',
 				default: '',
-				description: 'Workspace to perform actions on. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+				required: true,
+				placeholder: 'e.g. 123456789',
+				description: 'The numeric ID of the workspace to perform actions on.',
 			},
 			{
-				displayName: 'View Name or ID',
+				displayName: 'View ID',
 				name: 'view',
-				type: 'options',
-				typeOptions: {
-					loadOptionsMethod: 'getViews',
-					loadOptionsDependsOn: ['workspace', 'organisation'],
-				},
+				type: 'string',
 				default: '',
+				required: true,
+				placeholder: 'e.g. 123456789',
 				displayOptions: {
 					hide: {
 						operation: ['importNew'],
 					},
 				},
-				description: 'Table/View to perform actions on. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+				description: 'The numeric ID of the table/view to perform actions on.',
 			},
 
 			// ----------------------------------
@@ -354,8 +350,7 @@ export class ZohoAnalytics implements INodeType {
 					);
 				}
 
-				// Debug logging for scheduled execution diagnosis
-				console.log(`[ZohoAnalytics] execute item=${i} | orgID="${orgID}" (raw: "${orgIDRaw}") | workspaceID="${workspaceID}" (raw: "${workspaceIDRaw}") | resource="${resource}" | operation="${operation}"`);
+
 
 				if (resource === 'row') {
 					const viewIDRaw = this.getNodeParameter('view', i) as string | number || '';
@@ -371,7 +366,6 @@ export class ZohoAnalytics implements INodeType {
 						);
 					}
 
-					console.log(`[ZohoAnalytics] row operation | viewID="${viewID}" (raw: "${viewIDRaw}")`);
 					const endpoint = `/restapi/v2/workspaces/${encodeURIComponent(workspaceID)}/views/${encodeURIComponent(viewID)}/rows`;
 
 					if (operation === 'add') {
@@ -434,7 +428,6 @@ export class ZohoAnalytics implements INodeType {
 						);
 					}
 
-					console.log(`[ZohoAnalytics] data operation | viewID="${viewID}" (raw: "${viewIDRaw}")`);
 					const endpoint = `/restapi/v2/workspaces/${encodeURIComponent(workspaceID)}/views/${encodeURIComponent(viewID)}/data`;
 
 					if (operation === 'export') {
