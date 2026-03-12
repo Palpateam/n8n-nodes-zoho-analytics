@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-03-12
+
+### Added
+- **String ID Inputs:** Changed Organization, Workspace, and View input fields from dropdowns (`options`) to text fields (`string`). This allows for explicit configuration to bypass background resolution failures.
+
+### Fixed
+- **Refresh Token Expiry (Issue #2):** Made the `authQueryParameters` visible in credentials to enforce `access_type=offline` and `prompt=consent` ensuring proper Refresh Token generation from Zoho during OAuth login instead of session expiration after 3600s.
+- **Background Authorization Fails (`ERR_INVALID_URL` Root Cause):** Flattened the nested `{{$self["url"]}}` reference in the OAuth credential's tokens endpoints to use `{{$self["environment"]}}` directly. This prevents n8n from creating malformed URLs during background refreshes.
+
 ## [1.1.1] - 2026-03-06
 
 ### Added

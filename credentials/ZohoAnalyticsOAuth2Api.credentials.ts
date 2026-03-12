@@ -71,8 +71,9 @@ export class ZohoAnalyticsOAuth2Api implements ICredentialType {
 		{
 			displayName: 'Auth URI Query Parameters',
 			name: 'authQueryParameters',
-			type: 'hidden',
+			type: 'string',
 			default: 'access_type=offline&prompt=consent',
+			description: 'Query parameters to append to the Authorization URL (required to get a refresh token)',
 		},
 		{
 			displayName: 'Authentication',
